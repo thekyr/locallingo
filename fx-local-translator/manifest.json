@@ -1,0 +1,42 @@
+{
+  "manifest_version": 2,
+  "name": "LocalLingo — AI Page Translator",
+  "version": "1.0.0",
+  "description": "Translate web pages using a local AI model (Ollama, LM Studio, etc.)",
+  "author": "You",
+
+  "permissions": [
+    "activeTab",
+    "storage",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
+  ],
+
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+
+  "browser_action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "LocalLingo Translator"
+  },
+
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": false
+  },
+
+  "icons": {
+    "48": "icons/icon48.png",
+    "96": "icons/icon96.png"
+  }
+}
