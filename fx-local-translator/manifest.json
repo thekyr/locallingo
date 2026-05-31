@@ -3,7 +3,14 @@
   "name": "LocalLingo — AI Page Translator",
   "version": "1.0.0",
   "description": "Translate web pages using a local AI model (Ollama, LM Studio, etc.)",
-  "author": "You",
+  "author": "Theo Kyriakidis",
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "locallingo@thekyr.dev",
+      "strict_min_version": "109.0"
+    }
+  },
 
   "permissions": [
     "activeTab",
