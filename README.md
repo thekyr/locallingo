@@ -80,6 +80,42 @@ export OLLAMA_ORIGINS="*"
 
 ---
 
+## Building & packaging
+
+The repo ships with `build.sh`, which packages the contents of `fx-local-translator/`
+into an installable archive (`manifest.json` at the zip root, as Firefox requires).
+
+```bash
+./build.sh           # → dist/locallingo-<version>.xpi
+./build.sh --lint    # lint with web-ext before building
+./build.sh --sign    # build + submit to AMO for signing (unlisted channel)
+```
+
+`--lint` and `--sign` require [`web-ext`](https://extensionworkshop.com/documentation/develop/web-ext-command-reference/):
+
+```bash
+npm install -g web-ext
+```
+
+### Signing for permanent install
+
+A regular Firefox install only accepts add-ons signed by Mozilla. To sign:
+
+1. Create a free account at [addons.mozilla.org](https://addons.mozilla.org) and generate an [API key](https://addons.mozilla.org/developers/addon/api/key/).
+2. Export the credentials and run the signed build:
+
+   ```bash
+   export AMO_JWT_ISSUER="user:xxxxx:xxx"
+   export AMO_JWT_SECRET="your-secret"
+   ./build.sh --sign
+   ```
+
+   The `unlisted` channel returns a signed `.xpi` you can self-host and install
+   directly — no public review queue. (The extension ID is set via
+   `browser_specific_settings.gecko.id` in `manifest.json`.)
+
+---
+
 ## Usage
 
 ### Translate selected text
