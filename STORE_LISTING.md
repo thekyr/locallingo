@@ -24,7 +24,7 @@ Translate web pages and selected text with a local AI model. Runs entirely on yo
 tkyriakidis@gmail.com
 
 ## Support site / homepage
-https://github.com/<your-org>/locallingo  *(update to the real repo URL)*
+https://github.com/theyr/locallingo
 
 ---
 

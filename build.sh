@@ -38,10 +38,18 @@ fi
 if [[ "${1:-}" == "--sign" ]]; then
   : "${AMO_JWT_ISSUER:?set AMO_JWT_ISSUER (from addons.mozilla.org API key)}"
   : "${AMO_JWT_SECRET:?set AMO_JWT_SECRET (from addons.mozilla.org API key)}"
+
+  # Listed versions require a license; pass it via amo-metadata.json if present.
+  META_ARGS=()
+  if [[ -f "amo-metadata.json" ]]; then
+    META_ARGS=(--amo-metadata "amo-metadata.json")
+  fi
+
   web-ext sign \
     --source-dir "$SRC_DIR" \
     --artifacts-dir "$DIST_DIR" \
     --channel listed \
+    "${META_ARGS[@]}" \
     --api-key "$AMO_JWT_ISSUER" \
     --api-secret "$AMO_JWT_SECRET"
   echo "Signed artifact written to $DIST_DIR/"
