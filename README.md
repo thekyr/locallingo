@@ -256,4 +256,4 @@ All text is processed locally on your machine. Nothing is sent to external serve
 
 ## License
 
-MIT
+Apache-2.0
