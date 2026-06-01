@@ -1,14 +1,20 @@
 {
   "manifest_version": 2,
   "name": "LocalLingo — AI Page Translator",
-  "version": "1.0.0",
-  "description": "Translate web pages using a local AI model (Ollama, LM Studio, etc.)",
+  "version": "1.0.2",
+  "description": "AI local translator using Ollama model",
   "author": "Theo Kyriakidis",
 
   "browser_specific_settings": {
     "gecko": {
       "id": "locallingo@thekyr.dev",
-      "strict_min_version": "109.0"
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    },
+    "gecko_android": {
+      "strict_min_version": "142.0"
     }
   },
 

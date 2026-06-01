@@ -51,7 +51,7 @@ fi
 # Plain build: zip the contents of SRC_DIR with manifest.json at the root.
 # Excludes OS/editor cruft.
 ( cd "$SRC_DIR" && zip -r -FS "../$OUT" . \
-    -x "*.DS_Store" -x "*/.git/*" -x "*~" >/dev/null )
+    -x "*.DS_Store" -x "*/.git/*" -x "*~" -x ".amo-upload-uuid" >/dev/null )
 
 echo "Built $OUT"
 unzip -l "$OUT"
