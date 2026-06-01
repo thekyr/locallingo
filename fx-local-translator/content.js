@@ -148,7 +148,8 @@
     if (status) status.textContent = msg;
     if (fill) fill.style.width = "100%";
     if (fill) fill.style.background = success ? "#10b981" : "#ef4444";
-    setTimeout(() => overlay?.remove(), 2500);
+    // Keep errors on screen longer so they can actually be read.
+    setTimeout(() => overlay?.remove(), success ? 2500 : 8000);
   }
 
   // ── Main translation entry point ──────────────────────────────────────────────
@@ -174,9 +175,15 @@
       if (!response) throw new Error("No response from background.");
       applyResults(response.results, blocks, map);
 
-      const msg = response.failed > 0
-        ? `Done — ${response.failed} block(s) failed.`
-        : `Translated ${chunks.length} blocks ✓`;
+      let msg;
+      if (response.failed === 0) {
+        msg = `Translated ${chunks.length} blocks ✓`;
+      } else if (response.failed === chunks.length) {
+        // Everything failed — show the underlying cause, not just a count.
+        msg = `Failed: ${response.error || "all blocks failed"}`;
+      } else {
+        msg = `Done — ${response.failed}/${chunks.length} failed (${response.error || "see console"})`;
+      }
       closeOverlay(msg, response.failed === 0);
 
     } catch (err) {
@@ -184,10 +191,129 @@
     }
   }
 
+  // ── Selection translation bubble ──────────────────────────────────────────────
+  function removeBubble() {
+    document.getElementById("__locallingo_bubble")?.remove();
+  }
+
+  function showBubble(rect, targetLang) {
+    removeBubble();
+
+    const bubble = document.createElement("div");
+    bubble.id = "__locallingo_bubble";
+    bubble.style.cssText = `
+      position: absolute; z-index: 2147483647;
+      max-width: 360px; min-width: 180px;
+      background: #0f1117; color: #e2e8f0;
+      font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.5;
+      border-radius: 10px; padding: 12px 14px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.5); border: 1px solid #2d3748;
+      animation: llFadeIn .15s ease;
+    `;
+    // Position just below the selection, clamped to the viewport.
+    const top = window.scrollY + rect.bottom + 8;
+    const left = Math.min(
+      window.scrollX + rect.left,
+      window.scrollX + document.documentElement.clientWidth - 376
+    );
+    bubble.style.top = `${top}px`;
+    bubble.style.left = `${Math.max(window.scrollX + 8, left)}px`;
+
+    bubble.innerHTML = `
+      <style>
+        @keyframes llFadeIn { from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:translateY(0) } }
+        #__locallingo_bubble .ll-head { display:flex; align-items:center; gap:8px; margin-bottom:6px }
+        #__locallingo_bubble .ll-actions { display:flex; gap:8px; margin-top:10px }
+        #__locallingo_bubble button {
+          font:inherit; cursor:pointer; border:1px solid #2d3748; background:#1a202c;
+          color:#cbd5e1; border-radius:6px; padding:4px 10px; font-size:12px;
+        }
+        #__locallingo_bubble button:hover { background:#2d3748 }
+      </style>
+      <div class="ll-head">
+        <span style="font-size:15px">🌐</span>
+        <strong style="color:#a78bfa">LocalLingo</strong>
+        <span id="__ll_lang" style="margin-left:auto;color:#64748b;font-size:11px"></span>
+        <button id="__ll_close" title="Close" style="padding:2px 8px">✕</button>
+      </div>
+      <div id="__ll_body" style="color:#94a3b8">Translating…</div>
+    `;
+    document.body.appendChild(bubble);
+
+    // Set dynamic values via textContent (never interpolate into innerHTML).
+    bubble.querySelector("#__ll_lang").textContent = `→ ${targetLang}`;
+    bubble.querySelector("#__ll_close").addEventListener("click", removeBubble);
+    return bubble;
+  }
+
+  async function translateSelection(targetLang) {
+    const selection = window.getSelection();
+    const text = selection.toString().trim();
+    if (!text || selection.rangeCount === 0) return;
+
+    const rect = selection.getRangeAt(0).getBoundingClientRect();
+    const bubble = showBubble(rect, targetLang);
+    const body = bubble.querySelector("#__ll_body");
+
+    try {
+      const response = await browser.runtime.sendMessage({
+        type: "TRANSLATE_TEXT",
+        text,
+        targetLang
+      });
+
+      if (!response || typeof response.text !== "string") {
+        throw new Error("No response from background.");
+      }
+
+      // If every piece failed the text is just the original — show the cause instead.
+      if (response.failed > 0 && response.error) {
+        body.style.color = "#f87171";
+        body.textContent = `Failed: ${response.error}`;
+        return;
+      }
+
+      body.style.color = "#e2e8f0";
+      body.textContent = response.text;
+
+      const actions = document.createElement("div");
+      actions.className = "ll-actions";
+      const copyBtn = document.createElement("button");
+      copyBtn.textContent = "Copy";
+      copyBtn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(response.text);
+          copyBtn.textContent = "Copied ✓";
+          setTimeout(() => { copyBtn.textContent = "Copy"; }, 1500);
+        } catch {
+          copyBtn.textContent = "Copy failed";
+        }
+      });
+      actions.appendChild(copyBtn);
+      body.after(actions);
+
+    } catch (err) {
+      body.style.color = "#f87171";
+      body.textContent = `Error: ${err.message}`;
+    }
+  }
+
+  // Dismiss the bubble when clicking elsewhere or pressing Escape.
+  document.addEventListener("mousedown", (e) => {
+    const bubble = document.getElementById("__locallingo_bubble");
+    if (bubble && !bubble.contains(e.target)) removeBubble();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") removeBubble();
+  });
+
   // ── Listen for messages from popup / background ───────────────────────────────
   browser.runtime.onMessage.addListener((message) => {
     if (message.type === "START_TRANSLATION") {
       translatePage(message.targetLang);
+    }
+    if (message.type === "TRANSLATE_SELECTION") {
+      translateSelection(message.targetLang);
     }
     if (message.type === "PROGRESS") {
       updateOverlay(message.done, message.total);

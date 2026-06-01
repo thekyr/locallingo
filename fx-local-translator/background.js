@@ -13,12 +13,9 @@ const DEFAULT_SETTINGS = {
 };
 
 // ── Fetch settings from storage ──────────────────────────────────────────────
+// Firefox's browser.* API is promise-based — pass no callback.
 async function getSettings() {
-  return new Promise((resolve) => {
-    browser.storage.local.get(DEFAULT_SETTINGS, (result) => {
-      resolve(result);
-    });
-  });
+  return browser.storage.local.get(DEFAULT_SETTINGS);
 }
 
 // ── Ollama API call ───────────────────────────────────────────────────────────
@@ -29,6 +26,7 @@ async function callOllama(text, targetLang, settings) {
   const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    signal: AbortSignal.timeout(120000),
     body: JSON.stringify({
       model: settings.model,
       prompt,
@@ -38,7 +36,8 @@ async function callOllama(text, targetLang, settings) {
   });
 
   if (!response.ok) {
-    throw new Error(`Ollama error: ${response.status} ${response.statusText}`);
+    const body = await response.text().catch(() => "");
+    throw new Error(`Ollama ${response.status}: ${body.slice(0, 200) || response.statusText}`);
   }
 
   const data = await response.json();
@@ -52,6 +51,7 @@ async function callOpenAI(text, targetLang, settings) {
   const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    signal: AbortSignal.timeout(120000),
     body: JSON.stringify({
       model: settings.model,
       messages: [
@@ -110,6 +110,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const settings = await getSettings();
       const results = [];
       let failed = 0;
+      let firstError = null;
 
       for (let i = 0; i < chunks.length; i++) {
         try {
@@ -118,6 +119,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } catch (err) {
           results.push({ index: i, text: chunks[i], ok: false, error: err.message });
           failed++;
+          if (!firstError) firstError = err.message;
         }
 
         // Report progress back to the tab
@@ -130,7 +132,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
       }
 
-      sendResponse({ results, failed });
+      sendResponse({ results, failed, error: firstError });
     })();
 
     return true; // keep channel open for async response
@@ -159,7 +161,67 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === "SAVE_SETTINGS") {
-    browser.storage.local.set(message.settings, () => sendResponse({ ok: true }));
+    browser.storage.local.set(message.settings).then(() => sendResponse({ ok: true }));
     return true;
   }
+
+  // Translate a single block of free text (used by the selection bubble).
+  // Splits long selections at natural boundaries and reassembles the result.
+  if (message.type === "TRANSLATE_TEXT") {
+    (async () => {
+      const settings = await getSettings();
+      const maxChars = message.maxChars || 800;
+      const pieces = splitIntoChunks(message.text, maxChars);
+      const out = [];
+      let failed = 0;
+      let firstError = null;
+
+      for (const piece of pieces) {
+        try {
+          out.push(await translateChunk(piece, message.targetLang, settings));
+        } catch (err) {
+          out.push(piece);
+          failed++;
+          if (!firstError) firstError = err.message;
+        }
+      }
+
+      sendResponse({ text: out.join(" "), failed, error: firstError });
+    })();
+
+    return true;
+  }
+});
+
+// ── Context menu: "Translate selection" ───────────────────────────────────────
+const MENU_ID = "locallingo-translate-selection";
+
+function createMenu() {
+  // removeAll first so non-persistent background restarts don't duplicate the id.
+  browser.contextMenus.removeAll().then(() => {
+    browser.contextMenus.create({
+      id: MENU_ID,
+      title: "Translate selection",
+      contexts: ["selection"]
+    });
+  });
+}
+
+createMenu();
+browser.runtime.onInstalled.addListener(createMenu);
+
+browser.contextMenus.onClicked.addListener(async (info, tab) => {
+  if (info.menuItemId !== MENU_ID || !tab) return;
+
+  const { lastLang } = await browser.storage.local.get({ lastLang: "English" });
+
+  // Ensure the content script is present (page may predate the extension).
+  try {
+    await browser.tabs.executeScript(tab.id, { file: "content.js" });
+  } catch (e) { /* already injected */ }
+
+  browser.tabs.sendMessage(tab.id, {
+    type: "TRANSLATE_SELECTION",
+    targetLang: lastLang
+  }).catch(() => {});
 });

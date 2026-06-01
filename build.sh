@@ -41,7 +41,7 @@ if [[ "${1:-}" == "--sign" ]]; then
   web-ext sign \
     --source-dir "$SRC_DIR" \
     --artifacts-dir "$DIST_DIR" \
-    --channel unlisted \
+    --channel listed \
     --api-key "$AMO_JWT_ISSUER" \
     --api-secret "$AMO_JWT_SECRET"
   echo "Signed artifact written to $DIST_DIR/"

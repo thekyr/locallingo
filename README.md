@@ -58,17 +58,38 @@ ollama pull mistral        # alternative — strong European language support (~
 ollama pull aya-expanse    # best multilingual quality, 23 languages (~4GB)
 ```
 
-### 3. Start Ollama with CORS enabled
+### 3. Allow the extension to reach Ollama (`OLLAMA_ORIGINS`)
+
+Ollama blocks requests coming from a browser origin by default, so the extension
+**must** be allow-listed or every translation fails with `403 Forbidden`. Set
+`OLLAMA_ORIGINS` to `*` (or your `moz-extension://…` origin) and restart Ollama.
+
+**macOS / Linux (manual run)**
 
 ```bash
 OLLAMA_ORIGINS="*" ollama serve
 ```
 
-To make this permanent on macOS, add to `~/.zshrc`:
+To make it permanent, add `export OLLAMA_ORIGINS="*"` to `~/.zshrc` (macOS) or use
+`systemctl edit ollama` and add `Environment="OLLAMA_ORIGINS=*"` (Linux systemd),
+then `systemctl restart ollama`.
 
-```bash
-export OLLAMA_ORIGINS="*"
+**Windows**
+
+Ollama runs as a tray app and reads a *user* environment variable. In PowerShell:
+
+```powershell
+setx OLLAMA_ORIGINS "*"
 ```
+
+Then **fully quit Ollama** (right-click the tray icon → *Quit Ollama*) and relaunch
+it from the Start menu — `setx` only applies to processes started afterwards.
+
+> Verify it worked from a terminal (this bypasses the browser origin check):
+> ```bash
+> curl http://localhost:11434/api/generate -d '{"model":"mistral","prompt":"hi","stream":false}'
+> ```
+> A JSON response (not `403`) means Ollama is reachable and the model exists.
 
 ### 4. Load the extension in Firefox
 
@@ -88,7 +109,7 @@ into an installable archive (`manifest.json` at the zip root, as Firefox require
 ```bash
 ./build.sh           # → dist/locallingo-<version>.xpi
 ./build.sh --lint    # lint with web-ext before building
-./build.sh --sign    # build + submit to AMO for signing (unlisted channel)
+./build.sh --sign    # build + submit to AMO (listed channel — public review queue)
 ```
 
 `--lint` and `--sign` require [`web-ext`](https://extensionworkshop.com/documentation/develop/web-ext-command-reference/):
@@ -110,8 +131,12 @@ A regular Firefox install only accepts add-ons signed by Mozilla. To sign:
    ./build.sh --sign
    ```
 
-   The `unlisted` channel returns a signed `.xpi` you can self-host and install
-   directly — no public review queue. (The extension ID is set via
+   The `listed` channel submits the package to addons.mozilla.org and enters the
+   public review queue; once approved it gets a public listing page. The listing
+   metadata (summary, description, screenshots) must still be filled in on the AMO
+   website — see [`STORE_LISTING.md`](STORE_LISTING.md). To instead get a signed
+   `.xpi` for self-hosting with no review, change `--channel listed` to
+   `--channel unlisted` in `build.sh`. (The extension ID is set via
    `browser_specific_settings.gecko.id` in `manifest.json`.)
 
 ---
@@ -202,7 +227,9 @@ fx-local-translator/
 **403 Forbidden errors**
 
 - Ollama is blocking requests from the browser extension
-- Restart with: `OLLAMA_ORIGINS="*" ollama serve`
+- macOS/Linux: restart with `OLLAMA_ORIGINS="*" ollama serve`
+- Windows: run `setx OLLAMA_ORIGINS "*"`, then quit Ollama from the system tray and relaunch it
+- See [step 3](#3-allow-the-extension-to-reach-ollama-ollama_origins) for permanent setup
 
 **Translation fails on all blocks**
 
