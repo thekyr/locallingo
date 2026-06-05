@@ -31,7 +31,7 @@ https://github.com/thekyr/locallingo
 ## Screenshots
 *(Developer Hub → Edit Product Page → Screenshots. PNG/JPG; AMO recommends ~1280×800, max 4MB each. First screenshot is the thumbnail shown in search.)*
 
-Capture these on **Firefox Desktop** (the add-on is Desktop-only as of 1.1.2):
+Capture these on **Firefox Desktop** (the add-on is Desktop-only as of 1.1.3):
 
 1. **Selection translation bubble** — select a paragraph of foreign-language text, right-click → "Translate selection", and capture the floating translation bubble (with the Copy button visible).
 2. **Full-page translation in progress** — click the toolbar icon → choose a target language → "Translate Page", and capture the page with the live progress overlay mid-translation.

@@ -256,7 +256,7 @@ All text is processed locally on your machine. Nothing is sent to external serve
 
 ## Changelog
 
-### 1.1.2
+### 1.1.3
 
 - Now **Firefox Desktop only**; requires Firefox 142+. Android support was removed because the add-on connects to a local model server on `localhost`, which is not reachable from Firefox for Android.
 - Raised `strict_min_version` to 142 so `data_collection_permissions` is supported (resolves an AMO validation warning).
