@@ -24,7 +24,25 @@ Translate selected text and web pages with a local AI model via Ollama or any Op
 tkyriakidis@gmail.com
 
 ## Support site / homepage
-https://github.com/theyr/locallingo
+https://github.com/thekyr/locallingo
+
+---
+
+## Screenshots
+*(Developer Hub → Edit Product Page → Screenshots. PNG/JPG; AMO recommends ~1280×800, max 4MB each. First screenshot is the thumbnail shown in search.)*
+
+Capture these on **Firefox Desktop** (the add-on is Desktop-only as of 1.1.2):
+
+1. **Selection translation bubble** — select a paragraph of foreign-language text, right-click → "Translate selection", and capture the floating translation bubble (with the Copy button visible).
+2. **Full-page translation in progress** — click the toolbar icon → choose a target language → "Translate Page", and capture the page with the live progress overlay mid-translation.
+3. **Toolbar popup** — the popup open, showing "Server online", the target-language picker, and the Translate Page button.
+4. **Options / settings page** — the model server configuration (API type, server URL, model name, chunk size, system prompt).
+
+Notes:
+- Use a real page (e.g. a news article or docs page) so the before/after translation is obvious.
+- Make sure the new LocalLingo icon is visible in the toolbar for the popup shot.
+- Crop out unrelated browser chrome, bookmarks, and personal tabs/URLs.
+- Keep it to 3–4 clean screenshots; the first one is the most important since it's the listing thumbnail.
 
 ---
 
