@@ -258,6 +258,7 @@ All text is processed locally on your machine. Nothing is sent to external serve
 
 ### 1.1.3
 
+- New **LocalLingo logo** across the toolbar icon, popup, and settings page (replaces the previous placeholder icon and globe emoji).
 - Now **Firefox Desktop only**; requires Firefox 142+. Android support was removed because the add-on connects to a local model server on `localhost`, which is not reachable from Firefox for Android.
 - Raised `strict_min_version` to 142 so `data_collection_permissions` is supported (resolves an AMO validation warning).
 - No changes to translation behavior or privacy — your text still never leaves your machine.
