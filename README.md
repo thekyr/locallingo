@@ -20,7 +20,7 @@ Built for developers, sysadmins, and anyone who reads technical content in forei
 
 ## Requirements
 
-- Firefox (any recent version)
+- Firefox 142 or later (Desktop)
 - [Ollama](https://ollama.com) running locally — or any OpenAI-compatible server (LM Studio, Jan.ai, llama.cpp)
 
 ---
@@ -251,6 +251,16 @@ fx-local-translator/
 ## Privacy
 
 All text is processed locally on your machine. Nothing is sent to external servers. The extension requires `http://localhost/*` permission only to communicate with your local model server.
+
+---
+
+## Changelog
+
+### 1.1.2
+
+- Now **Firefox Desktop only**; requires Firefox 142+. Android support was removed because the add-on connects to a local model server on `localhost`, which is not reachable from Firefox for Android.
+- Raised `strict_min_version` to 142 so `data_collection_permissions` is supported (resolves an AMO validation warning).
+- No changes to translation behavior or privacy — your text still never leaves your machine.
 
 ---
 
