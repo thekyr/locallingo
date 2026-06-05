@@ -6,12 +6,12 @@ addons.mozilla.org → Developer Hub → Submit/Edit → "Listed" listing.
 ---
 
 ## Add-on name
-LocalLingo — AI Page Translator
+LocalLingo — Local AI Translator
 
 ## Summary
 *(max 250 characters — shown in search results)*
 
-Translate web pages and selected text with a local AI model. Runs entirely on your machine via Ollama or any OpenAI-compatible server — no cloud APIs, no API keys, and your text never leaves your computer.
+Translate selected text and web pages with a local AI model via Ollama or any OpenAI-compatible server. Runs entirely on your machine — no cloud, no API keys, your text never leaves your computer.
 
 ## Categories
 - Primary: **Language support / Translate**
@@ -31,9 +31,12 @@ https://github.com/theyr/locallingo
 ## Description
 *(shown on the listing page — supports basic formatting)*
 
-**LocalLingo translates the web using an AI model running on your own machine.**
-Nothing is sent to a cloud service, there are no API keys to manage, and the text
-you read stays completely private.
+**LocalLingo uses a local AI model — run with Ollama (or any OpenAI-compatible
+server) — to translate pages and selected text on your machine.** It bundles no
+AI model and contacts no remote service: all translation requests go only to your
+local server at `http://localhost` / `http://127.0.0.1`. Nothing is sent to a
+cloud service, there are no API keys to manage, and the text you read stays
+completely private.
 
 It connects to a local model server — **Ollama**, LM Studio, Jan.ai, llama.cpp, or
 any OpenAI-compatible endpoint — and uses it to translate pages and selections on

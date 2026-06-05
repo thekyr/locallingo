@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
-  "name": "LocalLingo — AI Page Translator",
+  "name": "LocalLingo — Local AI Translator",
   "version": "1.1.1",
-  "description": "AI local translator using Ollama model",
+  "description": "Translate text and web pages with a local AI model (Ollama). Your text never leaves your machine.",
   "author": "Theo Kyriakidis",
 
   "browser_specific_settings": {
