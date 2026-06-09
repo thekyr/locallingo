@@ -27,6 +27,8 @@ Built for developers, sysadmins, and anyone who reads technical content in forei
 
 ## Installation
 
+There are two parts: a **local model** (steps 1–3) and the **extension** (step 4).
+
 ### 1. Install Ollama
 
 **macOS (recommended — uses Metal GPU)**
@@ -91,53 +93,19 @@ it from the Start menu — `setx` only applies to processes started afterwards.
 > ```
 > A JSON response (not `403`) means Ollama is reachable and the model exists.
 
-### 4. Load the extension in Firefox
+### 4. Install the extension
+
+**Recommended — from Firefox Add-ons:**
+
+[**➜ Install LocalLingo**](https://addons.mozilla.org/firefox/addon/3b257f3a6bd84707bad7/) from addons.mozilla.org. Signed and auto-updating.
+
+**From source (development):**
 
 1. Go to `about:debugging` in Firefox
 2. Click **"This Firefox"** → **"Load Temporary Add-on…"**
-3. Navigate to the extension folder and select `manifest.json`
+3. Navigate to `fx-local-translator/` and select `manifest.json`
 
-> For a permanent install without signing, use [Firefox Developer Edition](https://www.mozilla.org/en-US/firefox/developer/) or [Firefox Nightly](https://www.mozilla.org/en-US/firefox/channel/desktop/) with `xpinstall.signatures.required` set to `false` in `about:config`.
-
----
-
-## Building & packaging
-
-The repo ships with `build.sh`, which packages the contents of `fx-local-translator/`
-into an installable archive (`manifest.json` at the zip root, as Firefox requires).
-
-```bash
-./build.sh           # → dist/locallingo-<version>.xpi
-./build.sh --lint    # lint with web-ext before building
-./build.sh --sign    # build + submit to AMO (listed channel — public review queue)
-```
-
-`--lint` and `--sign` require [`web-ext`](https://extensionworkshop.com/documentation/develop/web-ext-command-reference/):
-
-```bash
-npm install -g web-ext
-```
-
-### Signing for permanent install
-
-A regular Firefox install only accepts add-ons signed by Mozilla. To sign:
-
-1. Create a free account at [addons.mozilla.org](https://addons.mozilla.org) and generate an [API key](https://addons.mozilla.org/developers/addon/api/key/).
-2. Export the credentials and run the signed build:
-
-   ```bash
-   export AMO_JWT_ISSUER="user:xxxxx:xxx"
-   export AMO_JWT_SECRET="your-secret"
-   ./build.sh --sign
-   ```
-
-   The `listed` channel submits the package to addons.mozilla.org and enters the
-   public review queue; once approved it gets a public listing page. The listing
-   metadata (summary, description, screenshots) must still be filled in on the AMO
-   website — see [`STORE_LISTING.md`](STORE_LISTING.md). To instead get a signed
-   `.xpi` for self-hosting with no review, change `--channel listed` to
-   `--channel unlisted` in `build.sh`. (The extension ID is set via
-   `browser_specific_settings.gecko.id` in `manifest.json`.)
+See [CONTRIBUTING.md](CONTRIBUTING.md) for building, packaging, and signing your own `.xpi`.
 
 ---
 
@@ -186,37 +154,6 @@ A regular Firefox install only accepts add-ons signed by Mozilla. To sign:
 
 ---
 
-## Project Structure
-
-```
-fx-local-translator/
-├── manifest.json          # Extension manifest (MV2)
-├── background.js          # API calls to local model, context menu
-├── content.js             # DOM text extraction, bubble UI, page overlay
-├── popup/
-│   ├── popup.html         # Toolbar popup
-│   └── popup.js
-├── options/
-│   ├── options.html       # Settings page
-│   └── options.js
-└── icons/
-    ├── icon48.png
-    └── icon96.png
-```
-
----
-
-## How It Works
-
-1. **Selection:** The background script receives the selected text via the context menu API, splits it into ≤800 character chunks at natural paragraph/sentence boundaries, sends each chunk to the local model sequentially, then reassembles and displays the result in a floating bubble.
-  
-2. **Full page:** The content script walks the DOM with a `TreeWalker`, collects text nodes grouped by block element, sends all chunks to the background script, and replaces each text node in place as translations come back.
-  
-3. **All API calls** happen in `background.js` — never in the content script — so they are not subject to page Content Security Policies.
-  
-
----
-
 ## Troubleshooting
 
 **"Server offline" in the popup**
@@ -262,6 +199,14 @@ All text is processed locally on your machine. Nothing is sent to external serve
 - Now **Firefox Desktop only**; requires Firefox 142+. Android support was removed because the add-on connects to a local model server on `localhost`, which is not reachable from Firefox for Android.
 - Raised `strict_min_version` to 142 so `data_collection_permissions` is supported (resolves an AMO validation warning).
 - No changes to translation behavior or privacy — your text still never leaves your machine.
+
+---
+
+## Contributing
+
+Build instructions, packaging/signing, project layout, and an architecture
+overview live in [CONTRIBUTING.md](CONTRIBUTING.md). Security issues: see
+[SECURITY.md](SECURITY.md).
 
 ---
 
