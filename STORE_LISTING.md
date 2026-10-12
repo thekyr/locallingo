@@ -11,7 +11,7 @@ LocalLingo — Local AI Translator
 ## Summary
 *(max 250 characters — shown in search results)*
 
-Translate selected text and web pages with a local AI model via Ollama or any OpenAI-compatible server. Runs entirely on your machine — no cloud, no API keys, your text never leaves your computer.
+Translate selected text and web pages with your own AI model via Ollama or any OpenAI-compatible server, on your machine or your network. No cloud, no API keys: your text goes only to the server you run.
 
 ## Categories
 - Primary: **Language support / Translate**
@@ -31,7 +31,7 @@ https://github.com/thekyr/locallingo
 ## Screenshots
 *(Developer Hub → Edit Product Page → Screenshots. PNG/JPG; AMO recommends ~1280×800, max 4MB each. First screenshot is the thumbnail shown in search.)*
 
-Capture these on **Firefox Desktop** (the add-on is Desktop-only as of 1.1.3):
+Capture these on **Firefox Desktop** (the add-on is Desktop-only since 1.1.3):
 
 1. **Selection translation bubble** — select a paragraph of foreign-language text, right-click → "Translate selection", and capture the floating translation bubble (with the Copy button visible).
 2. **Full-page translation in progress** — click the toolbar icon → choose a target language → "Translate Page", and capture the page with the live progress overlay mid-translation.
@@ -49,12 +49,12 @@ Notes:
 ## Description
 *(shown on the listing page — supports basic formatting)*
 
-**LocalLingo uses a local AI model — run with Ollama (or any OpenAI-compatible
-server) — to translate pages and selected text on your machine.** It bundles no
-AI model and contacts no remote service: all translation requests go only to your
-local server at `http://localhost` / `http://127.0.0.1`. Nothing is sent to a
-cloud service, there are no API keys to manage, and the text you read stays
-completely private.
+**LocalLingo uses your own AI model — run with Ollama (or any OpenAI-compatible
+server) — to translate pages and selected text.** It bundles no AI model and
+contacts no service of its own: translation requests go only to the server you
+configure, by default `http://localhost:11434` on your machine, or a host you
+run on your network. Nothing is sent to a cloud service, there are no API keys to
+manage, and the text you read stays private.
 
 It connects to a local model server — **Ollama**, LM Studio, Jan.ai, llama.cpp, or
 any OpenAI-compatible endpoint — and uses it to translate pages and selections on
@@ -66,8 +66,10 @@ demand.
   translation bubble with a one-click Copy button.
 • Translate whole pages — one click replaces the page text in place, with a live
   progress overlay.
-• Fully local & private — your text is only ever sent to the model server you run;
-  it never leaves your device.
+• Fully local & private — your text is only ever sent to the model server you run,
+  never to the extension author or a third party.
+• Your own server, anywhere on your network — point it at Ollama on a LAN box,
+  container, or VM. Access to that host is requested only when you save it.
 • Works with any local backend — Ollama out of the box, or switch to an
   OpenAI-compatible server (LM Studio, Jan.ai, llama.cpp).
 • Pick any model and any target language; your last language is remembered.
@@ -84,21 +86,29 @@ A local model server must be running. The quickest path is Ollama
    app). Without this, Ollama returns 403 and translations fail.
 3. Open the LocalLingo toolbar popup, confirm "Server online", and translate.
 
+Running Ollama on another machine? Set the Server URL in Settings (e.g.
+`http://192.168.1.50:11434`) and accept Firefox's prompt to allow that host. On
+the server, set `OLLAMA_HOST=0.0.0.0` and `OLLAMA_ORIGINS`, and pull the model
+there.
+
 Full setup and troubleshooting instructions are in the project README.
 
 **Privacy**
 
-LocalLingo requires permission to talk to `http://localhost` / `http://127.0.0.1`
-only — that is your local model server. It collects no analytics and transmits no
-data to any third party.
+LocalLingo is granted `http://localhost` / `http://127.0.0.1` at install, for a
+model server on your machine. If you point it at another machine, it asks for
+access to that one host only, at the moment you save the setting; it never
+requests access to all sites, and you can revoke it in Add-ons → Permissions.
+It collects no analytics and transmits no data to any third party.
 
 ---
 
 ## Privacy policy text (if AMO requests one)
 
 LocalLingo does not collect, store, or transmit any personal data. All text to be
-translated is sent only to the local model server configured by the user
-(default: http://localhost:11434) and is never sent to the extension author or any
+translated is sent only to the model server configured by the user (default:
+http://localhost:11434, or another host the user runs and explicitly grants
+access to) and is never sent to the extension author or any
 third-party service. The extension stores its settings (server URL, model name,
 target language, system prompt) locally in the browser via the storage API.
 
@@ -114,6 +124,13 @@ model server. To test:
 3. Default server URL is http://localhost:11434 (configurable in the options page).
 4. Toolbar popup → "Translate Page" translates the active tab; right-click a text
    selection → "Translate selection" shows a translation bubble.
+
+About `optional_permissions` (`http://*/*`, `https://*/*`, added in 1.1.4): they
+exist so the user can run the model server on another machine on their network.
+They are never granted at install. When the user saves a non-localhost Server URL,
+the options page calls `permissions.request` for that single origin
+(`<scheme>://<host>/*`) only; the background script checks the grant with
+`permissions.contains` before each request. Localhost needs no prompt.
 
 No source build step is required — the package is plain JS/HTML/CSS with no
 minification or bundler.
