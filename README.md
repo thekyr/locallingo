@@ -11,6 +11,7 @@ Built for developers, sysadmins, and anyone who reads technical content in forei
 - **Translate selected text** — right-click any selection → instant floating translation bubble
 - **Translate full pages** — one click to replace all text on the page in place
 - **Fully local** — works with [Ollama](https://ollama.com), LM Studio, Jan.ai, or any OpenAI-compatible local server
+- **Your own server, anywhere on your network** — point it at Ollama on a LAN box, container, or VM; access is granted per host, only when you ask for it
 - **Preserves technical terms** — DevOps, sysadmin, and programming terms are never translated (docker, kubectl, nginx, etc.)
 - **Smart chunking** — long texts are split at paragraph/sentence boundaries and reassembled
 - **Progress indicator** — live overlay shows translation progress for both selections and full pages
@@ -21,7 +22,7 @@ Built for developers, sysadmins, and anyone who reads technical content in forei
 ## Requirements
 
 - Firefox 142 or later (Desktop)
-- [Ollama](https://ollama.com) running locally — or any OpenAI-compatible server (LM Studio, Jan.ai, llama.cpp)
+- [Ollama](https://ollama.com) running locally or on a machine you control on your network — or any OpenAI-compatible server (LM Studio, Jan.ai, llama.cpp)
 
 ---
 
@@ -137,7 +138,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for building, packaging, and signing your
 | Setting | Default | Description |
 | --- | --- | --- |
 | API Type | Ollama | Switch to "OpenAI-compatible" for LM Studio, Jan.ai, llama.cpp |
-| Server URL | `http://localhost:11434` | URL of your local model server |
+| Server URL | `http://localhost:11434` | URL of your model server: local, or another host (see below) |
 | Model Name | `mistral` | Any model you have installed |
 | Chunk size | `1500` chars | How much text is sent per request — larger = more context, slower |
 | System Prompt | (see below) | Instructions sent to the model before each translation |
@@ -145,18 +146,32 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for building, packaging, and signing your
 ### Using a server on another machine
 
 The Server URL can point at Ollama on another host (a LAN box, a Proxmox
-container, a VM), for example `http://192.168.1.50:11434`. Three things must be
+container, a VM), for example `http://192.168.1.50:11434`. Four things must be
 in place:
 
 1. **Extension permission.** When you click **Save** or **Test connection** with a
-   non-localhost URL, Firefox asks to let LocalLingo access that host. Allow it;
-   without it every request is blocked and the popup reports the server offline.
+   non-localhost URL, Firefox asks to let LocalLingo access that host. Allow it.
+   If you decline, the settings are not saved; if the permission is missing later,
+   the popup says `No permission for <host>` instead of translating. You can
+   revoke it any time in `about:addons` → LocalLingo → *Permissions*.
 2. **Ollama listens on the network.** By default it binds to `127.0.0.1` only. Set
    `OLLAMA_HOST=0.0.0.0` on the server (e.g. `systemctl edit ollama` →
    `Environment="OLLAMA_HOST=0.0.0.0"`) and restart it.
 3. **`OLLAMA_ORIGINS`** is set as in step 3, on the server.
+4. **The model is pulled on that server.** Models live on the machine running
+   Ollama, so `ollama pull qwen2.5:3b` there, not on your PC.
 
-Check from your machine with `curl http://<server-ip>:11434/api/tags`.
+**Test connection** only lists models, and that request passes Ollama's origin
+check even when translation requests do not. So it can show *Connected* while
+translating still fails with `403`. Check what a translation request will get,
+from your machine:
+
+```bash
+curl -i -H "Origin: moz-extension://test" http://<server-ip>:11434/api/generate -d '{"model":"qwen2.5:3b","prompt":"hi","stream":false}'
+```
+
+`200` means it works; `403` means `OLLAMA_ORIGINS` is not set on the server; `404`
+means the model is not pulled there.
 
 ### Recommended models by use case
 
@@ -183,6 +198,16 @@ Check from your machine with `curl http://<server-ip>:11434/api/tags`.
 - macOS/Linux: restart with `OLLAMA_ORIGINS="*" ollama serve`
 - Windows: run `setx OLLAMA_ORIGINS "*"`, then quit Ollama from the system tray and relaunch it
 - See [step 3](#3-allow-the-extension-to-reach-ollama-ollama_origins) for permanent setup
+- Remote server: set `OLLAMA_ORIGINS` on **the server**, not your PC (see [Using a server on another machine](#using-a-server-on-another-machine))
+
+**`No permission for <host>`**
+
+- The Server URL points at another machine and LocalLingo has not been granted access to it
+- Open Settings and click **Save** (or **Test connection**), then accept Firefox's prompt
+
+**`Ollama 404` with a remote server**
+
+- The model is not on that server: run `ollama list` there and `ollama pull <model>` if it is missing
 
 **Translation fails on all blocks**
 
@@ -203,11 +228,20 @@ Check from your machine with `curl http://<server-ip>:11434/api/tags`.
 
 ## Privacy
 
-All text is processed locally on your machine. Nothing is sent to external servers. The extension requires `http://localhost/*` permission only to communicate with your local model server.
+Text is sent only to the model server you configure, and nowhere else: by default the one on your own machine. Nothing goes to the extension author or any third-party service.
+
+The extension requires `http://localhost/*` and `http://127.0.0.1/*` to talk to a local server. If you point it at another machine, it asks for access to **that one host only**, at the moment you save the setting. It never requests access to all sites.
 
 ---
 
 ## Changelog
+
+### 1.1.4
+
+- **Use an Ollama server on another machine.** The Server URL can now point at a LAN host, container, or VM (e.g. `http://192.168.1.50:11434`). Previously the extension could only reach `localhost`, so a remote server was reported as offline.
+- Access to a remote server is an **optional permission, requested per host** when you click Save or Test connection. Nothing new is granted at install, and localhost works as before with no prompt.
+- Clearer errors: a missing permission shows `No permission for <host>` instead of "Server offline", and the settings page rejects malformed or non-http(s) URLs.
+- README: setup guide and troubleshooting for remote servers (`OLLAMA_HOST`, `OLLAMA_ORIGINS`, pulling the model on the server).
 
 ### 1.1.3
 
