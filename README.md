@@ -142,6 +142,22 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for building, packaging, and signing your
 | Chunk size | `1500` chars | How much text is sent per request — larger = more context, slower |
 | System Prompt | (see below) | Instructions sent to the model before each translation |
 
+### Using a server on another machine
+
+The Server URL can point at Ollama on another host (a LAN box, a Proxmox
+container, a VM), for example `http://192.168.1.50:11434`. Three things must be
+in place:
+
+1. **Extension permission.** When you click **Save** or **Test connection** with a
+   non-localhost URL, Firefox asks to let LocalLingo access that host. Allow it;
+   without it every request is blocked and the popup reports the server offline.
+2. **Ollama listens on the network.** By default it binds to `127.0.0.1` only. Set
+   `OLLAMA_HOST=0.0.0.0` on the server (e.g. `systemctl edit ollama` →
+   `Environment="OLLAMA_HOST=0.0.0.0"`) and restart it.
+3. **`OLLAMA_ORIGINS`** is set as in step 3, on the server.
+
+Check from your machine with `curl http://<server-ip>:11434/api/tags`.
+
 ### Recommended models by use case
 
 | Model | Size | Best for |

@@ -71,8 +71,29 @@ async function callOpenAI(text, targetLang, settings) {
   return (data.choices?.[0]?.message?.content || "").trim();
 }
 
+// ── Host permission check ────────────────────────────────────────────────────
+// A non-local server needs the optional host permission granted from the
+// settings page. Without it the fetch fails with a bare NetworkError that
+// looks like the server is down, so say what is actually missing.
+async function assertHostAllowed(serverUrl) {
+  let u;
+  try {
+    u = new URL(serverUrl);
+  } catch {
+    throw new Error(`Invalid server URL: ${serverUrl}`);
+  }
+  if (u.protocol === "http:" && (u.hostname === "localhost" || u.hostname === "127.0.0.1")) {
+    return;
+  }
+  const pattern = `${u.protocol}//${u.hostname}/*`;
+  if (!(await browser.permissions.contains({ origins: [pattern] }))) {
+    throw new Error(`No permission for ${u.host}. Open settings and click Save to grant it.`);
+  }
+}
+
 // ── Main translation dispatcher ───────────────────────────────────────────────
 async function translateChunk(text, targetLang, settings) {
+  await assertHostAllowed(settings.serverUrl);
   if (settings.apiType === "openai") {
     return await callOpenAI(text, targetLang, settings);
   }
@@ -142,6 +163,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     (async () => {
       const settings = await getSettings();
       try {
+        await assertHostAllowed(settings.serverUrl);
         let url = settings.apiType === "openai"
           ? `${settings.serverUrl}/v1/models`
           : `${settings.serverUrl}/api/tags`;

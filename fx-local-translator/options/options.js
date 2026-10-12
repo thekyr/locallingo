@@ -37,8 +37,54 @@ function showToast() {
   setTimeout(() => t.classList.remove("show"), 2500);
 }
 
+// ── Host permission for non-local servers ───────────────────────────────────
+// The manifest only grants localhost and 127.0.0.1. Any other server (a LAN box,
+// a container, a VM) needs an optional host permission, or every fetch to it is
+// blocked and the popup reports "Server offline".
+// Returns null for a local URL (already granted), the match pattern otherwise.
+function hostPermissionPattern(serverUrl) {
+  let u;
+  try {
+    u = new URL(serverUrl);
+  } catch {
+    throw new Error("Invalid server URL");
+  }
+  if (u.protocol !== "http:" && u.protocol !== "https:") {
+    throw new Error("Server URL must start with http:// or https://");
+  }
+  if (u.protocol === "http:" && (u.hostname === "localhost" || u.hostname === "127.0.0.1")) {
+    return null;
+  }
+  // Match patterns carry no port; the host covers every port on it.
+  return `${u.protocol}//${u.hostname}/*`;
+}
+
+// Must be called synchronously from a click handler, before any await:
+// Firefox only shows the permission prompt while handling user input.
+function requestHostPermission(serverUrl) {
+  const pattern = hostPermissionPattern(serverUrl);
+  if (!pattern) return Promise.resolve(true);
+  return browser.permissions.request({ origins: [pattern] });
+}
+
+function setTestResult(cls, text) {
+  $("testDot").className = cls;
+  $("testStatus").textContent = text;
+}
+
 $("saveBtn").addEventListener("click", async () => {
   const settings = getFormValues();
+  let granted;
+  try {
+    granted = await requestHostPermission(settings.serverUrl);
+  } catch (err) {
+    setTestResult("dot err", err.message);
+    return;
+  }
+  if (!granted) {
+    setTestResult("dot err", "Permission denied for this server; not saved");
+    return;
+  }
   await browser.storage.local.set(settings);
   showToast();
 });
@@ -54,10 +100,24 @@ $("testBtn").addEventListener("click", async () => {
   const dot = $("testDot");
   const status = $("testStatus");
 
+  // Request before anything awaits, so the prompt is still allowed to show.
+  let permission;
+  try {
+    permission = requestHostPermission(settings.serverUrl);
+  } catch (err) {
+    setTestResult("dot err", err.message);
+    return;
+  }
+
   dot.className = "dot";
   status.textContent = "Testing…";
 
   try {
+    if (!(await permission)) {
+      setTestResult("dot err", "Permission denied for this server");
+      return;
+    }
+
     const url = settings.apiType === "openai"
       ? `${settings.serverUrl}/v1/models`
       : `${settings.serverUrl}/api/tags`;
