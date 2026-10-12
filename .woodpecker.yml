@@ -1,0 +1,30 @@
+---
+# Cheap green/red signal on every push and PR: syntax-check, lint, and build
+# the extension. There is no package.json, so nothing is installed beyond the
+# tools each step needs.
+when:
+  - event: push
+  - event: pull_request
+
+steps:
+  # Ordered cheapest-first to fail fast: a JS syntax error or a malformed
+  # manifest is caught before web-ext is even downloaded.
+  lint:
+    image: node:22-slim
+    commands:
+      - for f in fx-local-translator/*.js fx-local-translator/*/*.js; do node --check "$f"; done
+      - node -e 'JSON.parse(require("fs").readFileSync("fx-local-translator/manifest.json", "utf8"))'
+      # Mozilla's linter is what AMO runs on upload; catching its errors here
+      # means a broken manifest or permission fails the PR, not the release.
+      # Errors fail the step; warnings are reported but do not.
+      - npx --yes web-ext@8 lint --source-dir fx-local-translator
+
+  # Package exactly as a release would, through build.sh, so a change that
+  # breaks the zip layout (manifest.json must sit at the archive root) or the
+  # version parse is caught in CI. The .xpi is unsigned; signing needs AMO keys
+  # and stays a manual step.
+  build:
+    image: alpine:3.20
+    commands:
+      - apk add --no-cache bash zip unzip grep
+      - ./build.sh
