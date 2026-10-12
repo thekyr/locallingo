@@ -79,7 +79,7 @@ steps:
         event: manual
     environment:
       GH_TOKEN:
-        from_secret: github_token
+        from_secret: locallingo_github_token
     commands:
       - apk add --no-cache bash grep github-cli
       - ./scripts/github-release.sh
