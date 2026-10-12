@@ -1,10 +1,12 @@
 ---
 # Cheap green/red signal on every push and PR: syntax-check, lint, and build
 # the extension. There is no package.json, so nothing is installed beyond the
-# tools each step needs.
+# tools each step needs. A manual run (Woodpecker UI, "Run pipeline") does the
+# same and also publishes; see the publish step.
 when:
   - event: push
   - event: pull_request
+  - event: manual
 
 steps:
   # Ordered cheapest-first to fail fast: a JS syntax error or a malformed
@@ -21,10 +23,41 @@ steps:
 
   # Package exactly as a release would, through build.sh, so a change that
   # breaks the zip layout (manifest.json must sit at the archive root) or the
-  # version parse is caught in CI. The .xpi is unsigned; signing needs AMO keys
-  # and stays a manual step.
+  # version parse is caught in CI. The .xpi is unsigned; publish signs.
   build:
     image: alpine:3.20
     commands:
       - apk add --no-cache bash zip unzip grep
       - ./build.sh
+
+  # Submit the manifest's version to AMO as a listed release. Runs after lint
+  # and build, so a version that fails either never uploads.
+  # Two triggers:
+  # - a main push that changes manifest.json, so a merged version bump reaches
+  #   users without a manual ./build.sh --sign. Gated on that file because AMO
+  #   refuses a version it already has: running on every main push would fail
+  #   every push that did not bump the version.
+  # - a manual run on main, for a version that is already on main but was never
+  #   submitted (the first release through this step, or a retry).
+  publish:
+    image: node:22-slim
+    when:
+      - branch: main
+        event: push
+        path:
+          include:
+            - "fx-local-translator/manifest.json"
+      - branch: main
+        event: manual
+    environment:
+      AMO_JWT_ISSUER:
+        from_secret: amo_jwt_issuer
+      AMO_JWT_SECRET:
+        from_secret: amo_jwt_secret
+      # A listed version waits for AMO review, which can take days. Without
+      # this, web-ext polls for approval and the step fails on its timeout even
+      # though the submission went through. 0 means submit and return.
+      WEB_EXT_APPROVAL_TIMEOUT: "0"
+    commands:
+      - npm install -g web-ext@8
+      - ./build.sh --sign
