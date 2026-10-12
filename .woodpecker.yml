@@ -61,3 +61,25 @@ steps:
     commands:
       - npm install -g web-ext@8
       - ./build.sh --sign
+
+  # Attach the .xpi that build wrote to a GitHub Release v<version>, so every
+  # submitted version has a downloadable file in the repo. Steps share the
+  # workspace, so dist/ from build is still here. Same triggers as publish and
+  # after it, so a release marks a version that was actually submitted.
+  # The file is unsigned; see scripts/github-release.sh.
+  release:
+    image: alpine:3.20
+    when:
+      - branch: main
+        event: push
+        path:
+          include:
+            - "fx-local-translator/manifest.json"
+      - branch: main
+        event: manual
+    environment:
+      GH_TOKEN:
+        from_secret: github_token
+    commands:
+      - apk add --no-cache bash grep github-cli
+      - ./scripts/github-release.sh
